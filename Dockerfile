@@ -7,6 +7,4 @@ COPY package*.json ./
 RUN npm install
 RUN npm run build
 
-ENTRYPOINT ["/entry.sh"]
-
 CMD ["npm run start"]
