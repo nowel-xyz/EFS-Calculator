@@ -3,6 +3,7 @@ import Command from "../../base/classes/Command";
 import CustomClient from "../../base/classes/CustomClient";
 import Category from "../../base/enums/Category";
 import Decimal from 'decimal.js';
+import IBeInputsConfig from "../../base/schemas/BeHistory";
 
 export default class EasterEggsv2 extends Command {
     constructor(client: CustomClient) {
@@ -98,7 +99,7 @@ export default class EasterEggsv2 extends Command {
                 let lastRunBlackEggs: Decimal;
                 try {
 
-                    
+
                     if (waterLevel > 150) { waterLevel = 150; }
                     blackEggs = new Decimal(blackEggsStr);
                     lastRunBlackEggs = new Decimal(lastRunBlackEggsStr);
@@ -112,13 +113,39 @@ export default class EasterEggsv2 extends Command {
                     return;
                 }
 
+
+                try {
+                    const userId = interaction.user.id;
+                    const newInput = {
+                        blackEggs: blackEggsStr,
+                        waterLevel,
+                        lastRunBlackEggs: lastRunBlackEggsStr,
+                        version: 2
+                    };
+
+                    const userInputs = await IBeInputsConfig.findOneAndUpdate(
+                        { userId },
+                        {
+                            $push: {
+                                inputs: {
+                                    $each: [newInput],
+                                    $slice: -10
+                                }
+                            }
+                        },
+                        { upsert: true, new: true }
+                    );
+                } catch (error) {
+                    console.error("Error saving input:", error);
+                }
+
                 // Calculation for water level reduction
                 const waterReduction = this.calculateWaterReduction(waterLevel);
                 const waterMultiplier = new Decimal(1).div(waterReduction);
 
                 // Calculations for the number of levels that can be bought with and without water level reduction
                 const goodKnightLevels = this.calculateGoodKnightLevels(blackEggs.times(EasterEggsv2.GK_PERCENT));
-               
+
                 const goodKnightLevelsWithWater = goodKnightLevels.div(waterReduction);
                 const mainEggsLevelsWithWater = this.calculateMainEggLevels(blackEggs.times(EasterEggsv2.MAIN_EGGS_PERCENT).times(waterMultiplier).div(7));
                 const miscEggsLevelsWithWater = this.calculateMiscEggLevels(blackEggs.times(EasterEggsv2.MISC_EGGS_PERCENT).times(waterMultiplier).div(13));
@@ -127,7 +154,7 @@ export default class EasterEggsv2 extends Command {
 
 
                 const oldgoodKnightLevels = this.calculateGoodKnightLevels(lastRunBlackEggs.times(EasterEggsv2.GK_PERCENT));
-               
+
                 const oldgoodKnightLevelsWithWater = oldgoodKnightLevels.div(waterReduction);
                 const oldmainEggsLevelsWithWater = this.calculateMainEggLevels(lastRunBlackEggs.times(EasterEggsv2.MAIN_EGGS_PERCENT).times(waterMultiplier).div(7));
                 const oldmiscEggsLevelsWithWater = this.calculateMiscEggLevels(lastRunBlackEggs.times(EasterEggsv2.MISC_EGGS_PERCENT).times(waterMultiplier).div(13));
@@ -137,22 +164,22 @@ export default class EasterEggsv2 extends Command {
                 const goodKnightLevelDiff = this.calculateLevelDifference(goodKnightLevelsWithWater, oldgoodKnightLevelsWithWater);
                 const mainEggsLevelDiff = this.calculateLevelDifference(mainEggsLevelsWithWater, oldmainEggsLevelsWithWater);
                 const miscEggsLevelDiff = this.calculateLevelDifference(miscEggsLevelsWithWater, oldmiscEggsLevelsWithWater);
-                const turtleEggLevelDiff = this.calculateLevelDifference(turtleEggLevelsWithWater, oldturtleEggLevelsWithWater); 
+                const turtleEggLevelDiff = this.calculateLevelDifference(turtleEggLevelsWithWater, oldturtleEggLevelsWithWater);
 
-               
+
                 // Calculation for the water level cost reduction percentage
                 const waterLevelCostReduction = (1 - waterReduction.toNumber()) * 100;
 
                 await interaction.editReply({
-                    content: `**Important this only works if you used EasterEgg command for your black eggs set up last retirement**\n` + 
-                             `Black Eggs: ${blackEggsStr.toUpperCase()}\n` +
-                             `Upgrade GK by: ${this.formatDecimal(goodKnightLevelDiff)} levels (GK level should be: ${this.formatDecimal(goodKnightLevelsWithWater)} after upgrade)\n` +
-                             `Upgrade each of your main 7 eggs by: ${this.formatDecimal(mainEggsLevelDiff)} levels (Main eggs level should be: ${this.formatDecimal(mainEggsLevelsWithWater)} after upgrade)\n` +
-                             `Upgrade each of your misc 13 eggs by: ${this.formatDecimal(miscEggsLevelDiff)} levels (Misc eggs level should be: ${this.formatDecimal(miscEggsLevelsWithWater)} after upgrade)\n` +
-                             `Upgrade your turtle by: ${this.formatDecimal(turtleEggLevelDiff)} levels (Turtle level should be: ${this.formatDecimal(turtleEggLevelsWithWater)} after upgrade)\n` +
-                             `Water level cost reduction: ${waterLevelCostReduction.toFixed(2)}%`
+                    content: `**Important this only works if you used EasterEgg command for your black eggs set up last retirement**\n` +
+                        `Black Eggs: ${blackEggsStr.toUpperCase()}\n` +
+                        `Upgrade GK by: ${this.formatDecimal(goodKnightLevelDiff)} levels (GK level should be: ${this.formatDecimal(goodKnightLevelsWithWater)} after upgrade)\n` +
+                        `Upgrade each of your main 7 eggs by: ${this.formatDecimal(mainEggsLevelDiff)} levels (Main eggs level should be: ${this.formatDecimal(mainEggsLevelsWithWater)} after upgrade)\n` +
+                        `Upgrade each of your misc 13 eggs by: ${this.formatDecimal(miscEggsLevelDiff)} levels (Misc eggs level should be: ${this.formatDecimal(miscEggsLevelsWithWater)} after upgrade)\n` +
+                        `Upgrade your turtle by: ${this.formatDecimal(turtleEggLevelDiff)} levels (Turtle level should be: ${this.formatDecimal(turtleEggLevelsWithWater)} after upgrade)\n` +
+                        `Water level cost reduction: ${waterLevelCostReduction.toFixed(2)}%`
                 });
-                
+
             } else {
                 await interaction.reply({ content: "Please provide the number of black eggs in scientific notation." });
             }

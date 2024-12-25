@@ -1,8 +1,7 @@
-import { ChatInputCommandInteraction, PermissionsBitField, ActionRowBuilder, StringSelectMenuBuilder, StringSelectMenuInteraction, ButtonInteraction, ButtonBuilder, ButtonStyle, ComponentType, Interaction } from "discord.js";
+import { ChatInputCommandInteraction, PermissionsBitField, ActionRowBuilder, StringSelectMenuBuilder, StringSelectMenuInteraction, ButtonInteraction, ButtonBuilder, ButtonStyle, ComponentType, Interaction, TextChannel } from "discord.js";
 import Command from "../../base/classes/Command";
 import CustomClient from "../../base/classes/CustomClient";
 import Category from "../../base/enums/Category";
-import Decimal from 'decimal.js';
 
 const characters = [
     { name: "Master Pai Mei", price: "10", level: "25", ability: "Tornado", upgrades: [], beRequired: [], levelForBE: [] },
@@ -130,7 +129,7 @@ export default class Characters extends Command {
             return (i.isStringSelectMenu() || i.isButton()) && i.user.id === interaction.user.id;
         };
 
-        const collector = interaction.channel?.createMessageComponentCollector({
+        const collector = (interaction.channel as TextChannel)?.createMessageComponentCollector({
             filter,
             time: 600000,
         });

@@ -3,6 +3,7 @@ import Command from "../../base/classes/Command";
 import CustomClient from "../../base/classes/CustomClient";
 import Category from "../../base/enums/Category";
 import Decimal from 'decimal.js';
+import IBeInputsConfig from "../../base/schemas/BeHistory";
 
 export default class EasterEggs extends Command {
     constructor(client: CustomClient) {
@@ -91,28 +92,48 @@ export default class EasterEggs extends Command {
                     return;
                 }
 
-                // Calculation for water level reduction
+                try {
+                    const userId = interaction.user.id;
+                    const newInput = {
+                        blackEggs: blackEggsStr,
+                        waterLevel,
+                        version: 1
+                    };
+
+                    const userInputs = await IBeInputsConfig.findOneAndUpdate(
+                        { userId },
+                        {
+                            $push: {
+                                inputs: {
+                                    $each: [newInput],
+                                    $slice: -10
+                                }
+                            }
+                        },
+                        { upsert: true, new: true }
+                    );
+                } catch (error) {
+                    console.error("Error saving input:", error);
+                }
+
                 const waterReduction = this.calculateWaterReduction(waterLevel);
                 const waterMultiplier = new Decimal(1).div(waterReduction);
 
-                // Calculations for the number of levels that can be bought with and without water level reduction
                 const goodKnightLevels = this.calculateGoodKnightLevels(blackEggs.times(EasterEggs.GK_PERCENT));
-               
                 const goodKnightLevelsWithWater = goodKnightLevels.div(waterReduction);
                 const mainEggsLevelsWithWater = this.calculateMainEggLevels(blackEggs.times(EasterEggs.MAIN_EGGS_PERCENT).times(waterMultiplier).div(7));
                 const miscEggsLevelsWithWater = this.calculateMiscEggLevels(blackEggs.times(EasterEggs.MISC_EGGS_PERCENT).times(waterMultiplier).div(13));
                 const turtleEggLevelsWithWater = this.calculateTurtleEggLevels(blackEggs.times(EasterEggs.TURTLE_EGGS_PERCENT).times(waterMultiplier));
 
-                // Calculation for the water level cost reduction percentage
                 const waterLevelCostReduction = (1 - waterReduction.toNumber()) * 100;
 
                 await interaction.editReply({
                     content: `Black Eggs: ${blackEggsStr.toUpperCase()}\n` +
-                             `Your GK needs to be level ${this.formatDecimal(goodKnightLevelsWithWater)}\n` +
-                             `Each of your main 7 eggs needs to be level ${this.formatDecimal(mainEggsLevelsWithWater)}\n` +
-                             `Each of your misc 13 eggs needs to be level ${this.formatDecimal(miscEggsLevelsWithWater)}\n` +
-                             `Your turtle needs to be level ${this.formatDecimal(turtleEggLevelsWithWater)}\n` +
-                             `Water level cost reduction: ${waterLevelCostReduction.toFixed(2)}%`
+                        `Your GK needs to be level ${this.formatDecimal(goodKnightLevelsWithWater)}\n` +
+                        `Each of your main 7 eggs needs to be level ${this.formatDecimal(mainEggsLevelsWithWater)}\n` +
+                        `Each of your misc 13 eggs needs to be level ${this.formatDecimal(miscEggsLevelsWithWater)}\n` +
+                        `Your turtle needs to be level ${this.formatDecimal(turtleEggLevelsWithWater)}\n` +
+                        `Water level cost reduction: ${waterLevelCostReduction.toFixed(2)}%`
                 });
             } else {
                 await interaction.reply({ content: "Please provide the number of black eggs in scientific notation." });

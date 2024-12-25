@@ -3,6 +3,8 @@ import Command from "../../base/classes/Command";
 import CustomClient from "../../base/classes/CustomClient";
 import Category from "../../base/enums/Category";
 
+// Note: This code isnt working yet, need to fix it 😂. 
+
 export default class BeFromBoss extends Command {
     constructor(client: CustomClient) {
         super(client, {
