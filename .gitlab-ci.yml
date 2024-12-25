@@ -1,0 +1,19 @@
+stages:
+  - build
+
+build_image:
+  stage: build
+  services:
+    - docker:latest
+  image: docker:latest
+  script:
+  - docker info
+  - echo $CI_REGISTRY_PASSWORD | docker login -u $CI_REGISTRY_USER $CI_REGISTRY --password-stdin
+  - DATE_VERSION="$(date +'%Y.%m.%d')"
+  - IMAGE_TAG_DATE="$CI_REGISTRY_IMAGE:$DATE_VERSION"
+  - docker build -t $IMAGE_TAG_DATE .
+  - docker push $IMAGE_TAG_DATE
+  only:
+    - build
+  tags:
+    - build
