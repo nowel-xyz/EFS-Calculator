@@ -4,7 +4,7 @@ import Handler from "./Handler";
 import Command from "./Command";
 import SubCommand from "./SubCommand";
 import { IConfig } from "../interface/IConfig";
-import { connect } from "mongoose";
+import mongoose, { connect } from "mongoose";
 
 
 export default class CustomClient extends Client implements ICustomClient {
@@ -17,14 +17,14 @@ export default class CustomClient extends Client implements ICustomClient {
     developmentMode: Boolean;
 
     constructor() {
-        super({ 
+        super({
             intents: [
-                GatewayIntentBits.Guilds, 
-                GatewayIntentBits.MessageContent, 
-                GatewayIntentBits.GuildMessages, 
-                GatewayIntentBits.Guilds, 
+                GatewayIntentBits.Guilds,
+                GatewayIntentBits.MessageContent,
+                GatewayIntentBits.GuildMessages,
+                GatewayIntentBits.Guilds,
                 GatewayIntentBits.GuildMembers,
-            ] 
+            ]
         })
         this.handler = new Handler(this)
         this.commands = new Collection()
@@ -38,13 +38,30 @@ export default class CustomClient extends Client implements ICustomClient {
     Init(): void {
         console.log(`Starting the bot in ${this.developmentMode ? "development" : "poriduction"}`)
         this.LoadHandlers()
-        
+
         this.login(process.env.Token)
             .catch((err) => console.error(err))
+        const mongooseUrl = process.env.MongooseUrl || "";
 
-        connect(process.env.MongooseUrl || "").then(() => {
-            console.log("Connected to MongoDB")
-        })
+        connect(mongooseUrl)
+            .then(() => {
+                console.log("Connected to MongoDB");
+            })
+            .catch((err) => {
+                console.error("Failed to connect to MongoDB:", err);
+            });
+
+        mongoose.connection.on("connected", () => {
+            console.log("[Mongoose] Connection established");
+        });
+
+        mongoose.connection.on("error", (err) => {
+            console.error("[Mongoose] Connection error:", err);
+        });
+
+        mongoose.connection.on("disconnected", () => {
+            console.warn("[Mongoose] Connection disconnected");
+        });
     }
 
     LoadHandlers(): void {
