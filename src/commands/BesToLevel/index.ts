@@ -30,6 +30,9 @@ export default class bestolevel extends Command {
         const blackEggs = interaction.options.getString("black_eggs");
         if(!blackEggs) return interaction.reply({content: "Please provide the amount of black eggs you have"});
         const data: any = runFunction(blackEggs, 0, 0, 0, 0, 0);
+        if (!data) {
+            return await interaction.reply({ content: "Black eggs cannot be less than 1e100" });
+        }
         const response = `You can get to level ${this.formatNumber(data[0][3])} with ${blackEggs} black eggs`;
         await interaction.reply({ content: response });
     }
