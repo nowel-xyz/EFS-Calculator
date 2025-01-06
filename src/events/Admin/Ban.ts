@@ -55,3 +55,4 @@ export default class AdminBanUserFromBot extends Event {
         }
     }
 }
+//test
