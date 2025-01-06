@@ -2,6 +2,8 @@ import { Events, Message } from "discord.js";
 import Event from "../../base/classes/Event";
 import CustomClient from "../../base/classes/CustomClient";
 import BannedUsers from "../../base/schemas/BannedUsers";
+import CommandConfig from "../../base/schemas/CommandConfig";
+
 
 export default class AdminBanUserFromBot extends Event {
     constructor(client: CustomClient) {
@@ -42,6 +44,13 @@ export default class AdminBanUserFromBot extends Event {
 
                 message.reply({content: `${userId}: is now ${status ? "banned" : "unbanned" } form ${this.client.user?.username}`})
                 
+            } else if(command === "!efscmd") {
+                const data = await CommandConfig.findOne({});
+                if (!data) {
+                    message.reply({content: "No data found"})
+                } else {
+                    message.reply({content: `Total commanmds used: ${data.CommandUsed}`})
+                }
             }
         }
     }
