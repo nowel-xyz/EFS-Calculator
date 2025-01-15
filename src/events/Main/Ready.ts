@@ -15,18 +15,47 @@ export default class Ready extends Event {
         console.log(`${this.client.user?.tag} is now ready!`)
 
         const rest = new REST().setToken(process.env.Token || "")
-        if (!this.client.developmentMode) {
-            const globalCommands: any = await rest.put(Routes.applicationCommands(this.client.user?.id || this.client.config.ClientId), {
-                body: this.GetJson(this.client.commands.filter(command => !command.dev))
-            })
-            console.log(`Successfuly set ${globalCommands.length} global application (/) commands`)
+
+
+
+
+        const formatCommandLog = (commands: any[], isDev: boolean) => {
+            // Determine the maximum lengths for each field
+            const maxNameLength = Math.max(...commands.map(command => command.name.length));
+            const maxDescriptionLength = Math.max(...commands.map(command => command.description.length));
+            const maxCategoryLength = Math.max(...commands.map(command => command.category.length));
+            const maxCooldownLength = Math.max(...commands.map(command => command.cooldown.toString().length));
+            
+            const typeLabel = isDev ? '[DEV]' : '[GLOBAL]';
+        
+            console.log(`\nSetting ${commands.length} ${isDev ? 'development' : 'global'} (/) commands:`);
+        
+            commands.forEach((command: any) => {
+                console.log(` - ${typeLabel} Command: ${command.name.padEnd(maxNameLength)} | Description: ${command.description.padEnd(maxDescriptionLength)} | Category: ${command.category.padEnd(maxCategoryLength)} | Cooldown: ${command.cooldown.toString().padEnd(maxCooldownLength)} ${`| Dev: ${command.dev}`} |`);
+            });
+        
+            console.log(`\nSuccessfully set ${commands.length} ${isDev ? 'dev' : 'global'} application (/) commands`);
+        };
+
+        if (this.client.developmentMode) {
+            const devCommands: any = await rest.put(
+                Routes.applicationGuildCommands(this.client.user?.id || this.client.config.ClientId, this.client.config.DevGuildId),
+                {
+                    body: this.GetJson(this.client.commands.filter(command => command.dev))
+                }
+            );
+        
+            formatCommandLog(Array.from(this.client.commands.filter(command => command.dev).values()), true);
+        } else {
+            const globalCommands: any = await rest.put(
+                Routes.applicationCommands(this.client.user?.id || this.client.config.ClientId),
+                {
+                    body: this.GetJson(this.client.commands.filter(command => !command.dev))
+                }
+            );
+        
+            formatCommandLog(Array.from(this.client.commands.filter(command => !command.dev).values()), false);
         }
-
-
-        const devCommands: any = await rest.put(Routes.applicationGuildCommands(this.client.user?.id || this.client.config.ClientId, this.client.config.DevGuildId), {
-            body: this.GetJson(this.client.commands.filter(command => command.dev))
-        })
-        console.log(`Successfuly set ${devCommands.length} dev application (/) commands`)
 
         
 
