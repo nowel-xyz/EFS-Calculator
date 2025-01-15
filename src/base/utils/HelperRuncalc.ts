@@ -254,6 +254,12 @@ function calculateProgression(inputLgHS, ancient_souls, chor_level, pony_level, 
         
         let hnum = heroReached(effectivelghs, start);
         let zone = zoneReached(effectivelghs, hnum);
+
+        let hnumidle = heroReached(effectivelghs, start, true, true, false);
+        let zoneidle = zoneReached(effectivelghs, hnumidle, true, true, false);
+
+        let hnumidlecombo = heroReached(effectivelghs, start, true, false, true);
+        let zoneidlecombo = zoneReached(effectivelghs, hnumidlecombo, true, false, true);
         
         if (zoneTL > zone) {
             if (zoneTL > MAX_ZONE) zoneTL = MAX_ZONE;
@@ -314,16 +320,30 @@ function calculateProgression(inputLgHS, ancient_souls, chor_level, pony_level, 
             durationSeconds = Math.floor(activeZones / 8050 * 3600);
             totalDuration += durationSeconds;
         }
-        data.push([
-            i,
-            lghsStart.toFixed(2),
-            getHeroAttr(hnum, "name"),
-            zone.toFixed(0),
-            hlevel.toFixed(0),
-            lghsChange.toFixed(2),
-            zoneTL.toFixed(0),
-            formatTime(durationSeconds)
-        ])
+
+        // i = run number
+        // lghsStart  = Run Black eggs
+        //  getHeroAttr(hnum, "name"), = Farmer
+        // zone = Level
+        // hlevel = Farmer Level
+        // lghsChange = Black eggs Increase
+        // zoneTL = Time Skip Max Level
+        // durationSeconds = Time Skip Max Level Time
+
+        data.push({
+            runNumber: i, // Run number
+            blackEggsStart: lghsStart.toFixed(2), // Run Black eggs
+            farmer: getHeroAttr(hnum, "name"), // Farmer name
+            level: zone.toFixed(0), // Level
+            farmerLevel: hlevel.toFixed(0), // Farmer Level
+            blackEggsIncrease: lghsChange.toFixed(2), // Black eggs Increase
+            timeSkipMaxLevel: zoneTL.toFixed(0), // Time Skip Max Level
+            timeSkipDuration: formatTime(durationSeconds), // Time Skip Max Level Time
+            idleLevel: zoneidle.toFixed(0), // Max idle Level
+            idleComboLevel: zoneidlecombo.toFixed(0) // Max idle Combo Level
+        });
+       
+
         if (zone >= MAX_ZONE) { // Stop if encountering infinite ascension
             break;
         }
@@ -358,13 +378,13 @@ function formatTime(durationSeconds) {
     }
 }
 
-function heroReached(lgHS, start=0, active=true) {
+function heroReached(lgHS, start=0, active=true, idle=false, combo=false) {
     // start is used to search for reachable hero 
     // from the previous ascension, to save execution time
     let zone, gold;
     let i = start;
     for (; i < HEROES.length; i++) {
-        zone = zoneReached(lgHS, i, active);
+        zone = zoneReached(lgHS, i, active, idle, combo);
         gold = zone * Math.log10(GOLD_SCALE) + 1.5 * lgHS + hsGoldAdjust + goldBonus140 - Math.log10(15);
         gold += active // Autoclickers or Xyliqil gold increase
             ? Math.min(306, cps)
@@ -377,7 +397,7 @@ function heroReached(lgHS, start=0, active=true) {
     return i;
 }
 
-function zoneReached(lgHS, i, active=true) {
+function zoneReached(lgHS, i, active=true, idle=false, combo=false) {
     let R = Math.log10(getHeroAttr(i, "damageScale")) / 
         Math.log10(getHeroAttr(i, "costScale")) / 25;
     let lgDmgMultPerZone = Math.log10(GOLD_SCALE) * R + 
@@ -403,7 +423,15 @@ function zoneReached(lgHS, i, active=true) {
             : xylBonus * 2 + (ACs > 2e9 ? 0 : cps);
     RHS += gildBonus + comboTime;
     RHS += ROOT2 * (i >= 48) * 43.64;   // Gog global DPS boost on Root2
-    
+
+    if(idle) {
+        RHS *= 1.0288 // 2.88% increase from
+    }
+
+    if(combo) {
+        RHS *= 1.1288 // 12.88% increase from
+    }
+
     let reqzone = (heroUpgradeBaseCost(i) - startingGold) / 
         Math.log10(GOLD_SCALE);
     

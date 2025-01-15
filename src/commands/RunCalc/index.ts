@@ -65,23 +65,40 @@ export default class RunCalc extends Command {
         let x = 0
         data.forEach((run: any) => {
             x++
-            const formattedBlackEggs = `e${Math.floor(run[1])}`;
-            const formattedBlackEggsIncrease = `e${Math.floor(run[5])}`;
-            const formattedLevel = this.formatNumber(run[3]);
-            const formattedFarmerLevel = this.formatNumber(run[4]);
-            const formattedTimeSkipMaxZone = this.formatNumber(run[6]);
-            if(x == 1) {
-                response += `Current Run Black eggs: ${formattedBlackEggs}. Farmer: ${run[2]}. Level: ${formattedLevel}. Farmer Level: ${formattedFarmerLevel}. Black eggs Increase: ${formattedBlackEggsIncrease}. Time Skip Max Level: ${formattedTimeSkipMaxZone}.\n`;
-
-            } else  {
-                response += `Next Run (${run[0]}) Black eggs: ${formattedBlackEggs}. Farmer: ${run[2]}. Level: ${formattedLevel}. Farmer Level: ${formattedFarmerLevel}. Black eggs Increase: ${formattedBlackEggsIncrease}. Time Skip Max Level: ${formattedTimeSkipMaxZone}.\n`;
-
+            const formattedBlackEggs = `e${Math.floor(run.blackEggsStart)}`;
+            const formattedBlackEggsIncrease = `e${Math.floor(run.blackEggsIncrease)}`;
+            const formattedLevel = this.formatNumber(run.level);
+            const formattedFarmerLevel = this.formatNumber(run.farmerLevel);
+            const formattedTimeSkipMaxZone = this.formatNumber(run.timeSkipMaxLevel);
+            const formattedIdleLevel = this.formatNumber(run.idleLevel);
+            const formattedIdleComboLevel = this.formatNumber(run.idleComboLevel);
+        
+            if (x === 1) {
+                response += `**Current Run:**\n` +
+                    `- Black Eggs: ${formattedBlackEggs}\n` +
+                    `- Level: ${formattedLevel}\n` +
+                    `- Farmer: ${run.farmer}\n` +
+                    `- Farmer Level: ${formattedFarmerLevel}\n` +
+                    `- Black Eggs Increase: ${formattedBlackEggsIncrease}\n` +
+                    `- Time Skip Max Level: ${formattedTimeSkipMaxZone}\n` +
+                    `- Max Idle Level: ${formattedIdleLevel}\n` +
+                    `- Max Idle Combo Level: ${formattedIdleComboLevel}\n\n`;
+            } else {
+                response += `**Next Run (${run.runNumber}):**\n` +
+                    `- Black Eggs: ${formattedBlackEggs}\n` +
+                    `- Level: ${formattedLevel}\n` +
+                    `- Farmer: ${run.farmer}\n` +
+                    `- Farmer Level: ${formattedFarmerLevel}\n` +
+                    `- Black Eggs Increase: ${formattedBlackEggsIncrease}\n` +
+                    `- Time Skip Max Level: ${formattedTimeSkipMaxZone}\n` +
+                    `- Max Idle Level: ${formattedIdleLevel}\n` +
+                    `- Max Idle Combo Level: ${formattedIdleComboLevel}\n\n`;
             }
         });
         await interaction.reply({ content: response });
     }
     
-    formatNumber(num: number): string {
+    formatNumber(num: any): string {
         if (num >= 1e9) {
             return (num / 1e9).toFixed(3) + 'B';
         } else if (num >= 1e6) {
@@ -89,7 +106,7 @@ export default class RunCalc extends Command {
         } else if (num >= 1e3) {
             return (num / 1e3).toFixed(2) + 'K';
         } else {
-            return num.toString();
+            return num
         }
     }
 }
