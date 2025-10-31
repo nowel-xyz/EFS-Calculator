@@ -11,12 +11,6 @@ export default class Handler implements IHandler {
     client: CustomClient
     constructor(client: CustomClient) {
         this.client = client
-        if(!this.client.developmentMode) {
-            this.client.on("error", (e) => console.error(`Error: ${e}`));
-            this.client.on("warn", (e) => console.warn(`Warning: ${e}`));
-            this.client.on("debug", (e) => console.info(`Debug: ${e}`));
-        }
-    
     }
     
     async LoadEvetns() {

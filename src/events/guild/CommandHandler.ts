@@ -24,25 +24,30 @@ export default class CommandHandler extends Event {
         if(!command) return await interaction.reply({ content: "This command dose not exit!", ephemeral: true }) && this.client.commands.delete(interaction.commandName)
 
 
-            let BannedUserData = await BannedUsers.findOne({userId: interaction.user.id})
+        try {
+            var BannedUserData = await BannedUsers.findOne({ UserId: interaction.user.id });    
             if(BannedUserData?.banned) {
                 return interaction.reply({ embeds: [new EmbedBuilder()
                     .setColor("Red")
                     .setDescription(`You are banned form using commands in ${this.client.user?.username}\n Join https://discord.gg/EM9yaSBW74 and open a ticket for a unban request`)
-            ], ephemeral: true});
+                ], ephemeral: true});
             }
 
-            const data = await CommandConfig.findOne({});
+        } catch (error) {
+            console.error('Error checking banned users:', error);   
+        }
+        
+        const data = await CommandConfig.findOne({});
 
-            
-            if (!data) {
-                const newConfig = new CommandConfig({
-                    CommandUsed: 1
-                });
-                await newConfig.save();
-            } else {
-                await CommandConfig.findOneAndUpdate({}, { $inc: { CommandUsed: 1 } });
-            }
+        
+        if (!data) {
+            const newConfig = new CommandConfig({
+                CommandUsed: 1
+            });
+            await newConfig.save();
+        } else {
+            await CommandConfig.findOneAndUpdate({}, { $inc: { CommandUsed: 1 } });
+        }
 
         if(command.dev && !this.client.config.DeveloperUserIds.includes(interaction.user.id))
             return interaction.reply({ embeds: [new EmbedBuilder()
