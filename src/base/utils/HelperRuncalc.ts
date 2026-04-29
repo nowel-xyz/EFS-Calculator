@@ -257,9 +257,13 @@ function calculateProgression(inputLgHS, ancient_souls, chor_level, pony_level, 
 
         let hnumidle = heroReached(effectivelghs, start, true, true, false);
         let zoneidle = zoneReached(effectivelghs, hnumidle, true, true, false);
+        // Apply observed idle boost
+        zoneidle *= 1.018;
 
-        let hnumidlecombo = heroReached(effectivelghs, start, true, false, true);
-        let zoneidlecombo = zoneReached(effectivelghs, hnumidlecombo, true, false, true);
+        let hnumidlecombo = heroReached(effectivelghs, start, true, true, true);
+        let zoneidlecombo = zoneReached(effectivelghs, hnumidlecombo, true, true, true);
+        // Apply observed idle+combo boost
+        zoneidlecombo *= 1.091;
         
         if (zoneTL > zone) {
             if (zoneTL > MAX_ZONE) zoneTL = MAX_ZONE;
@@ -398,11 +402,18 @@ function heroReached(lgHS, start=0, active=true, idle=false, combo=false) {
 }
 
 function zoneReached(lgHS, i, active=true, idle=false, combo=false) {
+
+    // Calculate log10 boost for idle and combo
+    let idleLogBoost = idle ? Math.log10(1.25) : 0;
+    let comboLogBoost = combo ? Math.log10(1.10) : 0;
+
     let R = Math.log10(getHeroAttr(i, "damageScale")) / 
         Math.log10(getHeroAttr(i, "costScale")) / 25;
     let lgDmgMultPerZone = Math.log10(GOLD_SCALE) * R + 
         ROOT2 * (ANCIENT_SOULS >= 6400) * Math.log10(1.01) / 10;
-    let efficiency = getHeroAttr(i, 'dps') - 
+    // Apply idle/combo boost only to hero DPS (efficiency term)
+    let baseDPS = getHeroAttr(i, 'dps') + idleLogBoost + comboLogBoost;
+    let efficiency = baseDPS - 
         R * (getHeroAttr(i, "lv1cost") + 175 * Math.log10(getHeroAttr(i, "costScale")));
 
     let startingGold = hsGoldAdjust + 1.5 * lgHS + goldBonus140 - Math.log10(15);
@@ -410,27 +421,25 @@ function zoneReached(lgHS, i, active=true, idle=false, combo=false) {
         ? Math.min(306, cps)
         : ROOT2 ? 0 : xylBonus;
     startingGold += ROOT2 * (i >= 47) * 98; // BomberMax global gold boost on Root2
-    
-    let RHS = efficiency + (2.4 + active * 0.5) * lgHS 
-        - 2 + startingGold * R;   // Minus 2 to account for boss HP
-    RHS += active
+
+    // Add idle/combo log10 boost directly to main DPS scaling
+    let dpsPortion = efficiency + ((2.4 + active * 0.5) * lgHS + idleLogBoost + comboLogBoost);
+    dpsPortion += active
         ? hsActiveDmgAdjust
         : hsIdleDmgAdjust;
-    RHS += active // Autoclickers or Xyliqil damage increase
+    dpsPortion += active // Autoclickers or Xyliqil damage increase
         ? Math.min(306, cps) * 2
         : ROOT2
             ? xylBonus + (ACs > 2e9 ? 0 : cps)
             : xylBonus * 2 + (ACs > 2e9 ? 0 : cps);
-    RHS += gildBonus + comboTime;
-    RHS += ROOT2 * (i >= 48) * 43.64;   // Gog global DPS boost on Root2
+    dpsPortion += gildBonus + comboTime;
+    dpsPortion += ROOT2 * (i >= 48) * 43.64;   // Gog global DPS boost on Root2
+    // Add idle/combo log10 boost
+    dpsPortion += idleLogBoost + comboLogBoost;
 
-    if(idle) {
-        RHS *= 1.0288 // 2.88% increase from
-    }
-
-    if(combo) {
-        RHS *= 1.1288 // 12.88% increase from
-    }
+    let RHS = dpsPortion - 2 + startingGold * R;
+    // Add idle/combo boost at the end to ensure effect
+    RHS += idleLogBoost + comboLogBoost;
 
     let reqzone = (heroUpgradeBaseCost(i) - startingGold) / 
         Math.log10(GOLD_SCALE);
