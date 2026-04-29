@@ -4,6 +4,8 @@ import CustomClient from "../../base/classes/CustomClient";
 import Category from "../../base/enums/Category";
 import Decimal from 'decimal.js';
 import IBeInputsConfig from "../../base/schemas/BeHistory";
+import { parseInput, convertToScientific } from "../../base/utils/EFS";
+
 
 export default class EasterEggsv2 extends Command {
     constructor(client: CustomClient) {
@@ -109,10 +111,22 @@ export default class EasterEggsv2 extends Command {
                         return;
                     }
                 } catch (error) {
-                    await interaction.editReply({ content: "Invalid scientific notation format." });
-                    return;
+                    const parseBE = parseInput(blackEggsStr)
+                    blackEggs = new Decimal(convertToScientific(parseBE))
+
+                    const parseBELastRun = parseInput(lastRunBlackEggsStr)
+                    lastRunBlackEggs = new Decimal(convertToScientific(parseBELastRun))
+
+                    if (lastRunBlackEggs.greaterThanOrEqualTo(blackEggs)) {
+                        await interaction.editReply(`Your black eggs from the last run cannot be lower than your current run.`);
+                        return;
+                    }
                 }
 
+
+
+
+                if (waterLevel > 150) { waterLevel = 150; }
 
                 try {
                     const userId = interaction.user.id;
