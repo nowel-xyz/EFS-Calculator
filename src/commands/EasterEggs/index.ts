@@ -84,14 +84,15 @@ export default class EasterEggs extends Command {
             if (blackEggsStr) {
                 await interaction.reply({ content: "Calculating... please wait." });
 
-                let blackEggs: Decimal;
-                try {
-                    blackEggs = new Decimal(blackEggsStr);
-                } catch (error) {
-                    const parseBE = parseInput(blackEggsStr)
-                    blackEggs = new Decimal(convertToScientific(parseBE))
-                    
-                }
+                const parseDecimal = (str: string): Decimal => {
+                    try {
+                        return new Decimal(str);
+                    } catch {
+                        return new Decimal(convertToScientific(parseInput(str)));
+                    }
+                };
+
+                const blackEggs = parseDecimal(blackEggsStr);
 
                 if (waterLevel > 150) { waterLevel = 150; }
 

@@ -97,37 +97,23 @@ export default class EasterEggsv2 extends Command {
             if (blackEggsStr && lastRunBlackEggsStr) {
                 await interaction.reply({ content: "Calculating... please wait." });
 
-                let blackEggs: Decimal;
-                let lastRunBlackEggs: Decimal;
-                try {
-
-
-                    if (waterLevel > 150) { waterLevel = 150; }
-                    blackEggs = new Decimal(blackEggsStr);
-                    lastRunBlackEggs = new Decimal(lastRunBlackEggsStr);
-
-                    if (lastRunBlackEggs.greaterThanOrEqualTo(blackEggs)) {
-                        await interaction.editReply(`Your black eggs from the last run cannot be lower than your current run.`);
-                        return;
-                    }
-                } catch (error) {
-                    const parseBE = parseInput(blackEggsStr)
-                    blackEggs = new Decimal(convertToScientific(parseBE))
-
-                    const parseBELastRun = parseInput(lastRunBlackEggsStr)
-                    lastRunBlackEggs = new Decimal(convertToScientific(parseBELastRun))
-
-                    if (lastRunBlackEggs.greaterThanOrEqualTo(blackEggs)) {
-                        await interaction.editReply(`Your black eggs from the last run cannot be lower than your current run.`);
-                        return;
-                    }
-                }
-
-
-
-
                 if (waterLevel > 150) { waterLevel = 150; }
 
+                const parseDecimal = (str: string): Decimal => {
+                    try {
+                        return new Decimal(str);
+                    } catch {
+                        return new Decimal(convertToScientific(parseInput(str)));
+                    }
+                };
+
+                const blackEggs = parseDecimal(blackEggsStr);
+                const lastRunBlackEggs = parseDecimal(lastRunBlackEggsStr);
+
+                if (lastRunBlackEggs.greaterThanOrEqualTo(blackEggs)) {
+                    await interaction.editReply(`Your black eggs from the last run cannot be lower than your current run.`);
+                    return;
+                }
                 try {
                     const userId = interaction.user.id;
                     const newInput = {

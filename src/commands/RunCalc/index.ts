@@ -2,7 +2,7 @@ import { ApplicationCommandOptionType, ChatInputCommandInteraction, PermissionsB
 import Command from "../../base/classes/Command";
 import CustomClient from "../../base/classes/CustomClient";
 import Category from "../../base/enums/Category";
-import runFunction from "../../base/utils/HelperRuncalc";
+import runFunction, { RunData } from "../../base/utils/HelperRuncalc";
 
 
 
@@ -46,68 +46,68 @@ export default class RunCalc extends Command {
                     description: 'sound Level',
                     required: true
                 },
+                {
+                    name: "output",
+                    choices: [
+                        { name: "normal", value: "normal" },
+                        { name: "idle", value: "idle" },
+                        { name: "idle + combo", value: "idle_combo" },
+                    ],
+                    type: ApplicationCommandOptionType.String,
+                    description: 'Output type for the calculation (default is normal)',
+                    required: false
+                }
             ],
             dev: false
         });
     }
 
     async Execute(interaction: ChatInputCommandInteraction) {
-        const ancientSouls = interaction.options.getNumber('gold_eggs');
-        const lghsInput = interaction.options.getString('black_eggs');
-        const chorLevel = interaction.options.getNumber('water');
-        const ponyLevel = interaction.options.getNumber('earth');
-        const borbLevel = interaction.options.getNumber('sound');
-        const data: any = runFunction(lghsInput, ancientSouls, chorLevel, ponyLevel, borbLevel, 0);
+        const lghsInput    = interaction.options.getString('black_eggs', true);
+        const ancientSouls = interaction.options.getNumber('gold_eggs', true);
+        const chorLevel    = interaction.options.getNumber('water', true);
+        const ponyLevel    = interaction.options.getNumber('earth', true);
+        const borbLevel    = interaction.options.getNumber('sound', true);
+        const outputType   = interaction.options.getString('output', false) || 'normal';
+
+        const data: RunData[] | undefined = runFunction(lghsInput, ancientSouls, chorLevel, ponyLevel, borbLevel, outputType);
         if (!data) {
             return await interaction.reply({ content: "Black eggs cannot be less than 1e100" });
         }
+
         let response = "Progression data:\n";
-        let x = 0
-        data.forEach((run: any) => {
-            x++
-            const formattedBlackEggs = `e${Math.floor(run.blackEggsStart)}`;
-            const formattedBlackEggsIncrease = `e${Math.floor(run.blackEggsIncrease)}`;
-            const formattedLevel = this.formatNumber(run.level);
-            const formattedFarmerLevel = this.formatNumber(run.farmerLevel);
-            const formattedTimeSkipMaxZone = this.formatNumber(run.timeSkipMaxLevel);
-            const formattedIdleLevel = this.formatNumber(run.idleLevel);
-            const formattedIdleComboLevel = this.formatNumber(run.idleComboLevel);
-        
-            if (x === 1) {
-                response += `**Current Run:**\n` +
-                    `- Black Eggs: ${formattedBlackEggs}\n` +
-                    `- Level: ${formattedLevel}\n` +
-                    `- Farmer: ${run.farmer}\n` +
-                    `- Farmer Level: ${formattedFarmerLevel}\n` +
-                    `- Black Eggs Increase: ${formattedBlackEggsIncrease}\n` +
-                    `- Time Skip Max Level: ${formattedTimeSkipMaxZone}\n` +
-                    `- Max Idle Level: ${formattedIdleLevel}\n` +
-                    `- Max Idle Combo Level: ${formattedIdleComboLevel}\n\n`;
-            } else {
-                response += `**Next Run (${run.runNumber}):**\n` +
-                    `- Black Eggs: ${formattedBlackEggs}\n` +
-                    `- Level: ${formattedLevel}\n` +
-                    `- Farmer: ${run.farmer}\n` +
-                    `- Farmer Level: ${formattedFarmerLevel}\n` +
-                    `- Black Eggs Increase: ${formattedBlackEggsIncrease}\n` +
-                    `- Time Skip Max Level: ${formattedTimeSkipMaxZone}\n` +
-                    `- Max Idle Level: ${formattedIdleLevel}\n` +
-                    `- Max Idle Combo Level: ${formattedIdleComboLevel}\n\n`;
-            }
+        data.forEach((run: RunData, index: number) => {
+            const blackEggs         = `e${Math.floor(Number(run.blackEggsStart))}`;
+            const blackEggsIncrease = `e${Math.floor(Number(run.blackEggsIncrease))}`;
+            const level             = this.formatNumber(Number(run.level));
+            const farmerLevel       = this.formatNumber(Number(run.farmerLevel));
+            const tlZone            = this.formatNumber(Number(run.timeSkipMaxLevel));
+            const idleLevel         = this.formatNumber(Number(run.idleLevel));
+            const idleComboLevel    = this.formatNumber(Number(run.idleComboLevel));
+
+            const header = index === 0 ? '**Current Run:**' : `**Next Run (${run.runNumber}):**`;
+            const lines = [
+                `${header}`,
+                `- Black Eggs: ${blackEggs}  (+${blackEggsIncrease})`,
+                `- Farmer: ${run.farmer}  (lv ${farmerLevel})`,
+                `- Time Skip To: ${tlZone}`,
+                `- **Push Zones & Times:**`,
+                `  - Active: ${level} - (${run.timeSkipDuration}h)`,
+            ];
+            if (outputType === 'idle' || outputType === 'normal')
+                lines.push(`  - Idle: ${idleLevel} - (${run.idleRunDuration}h)`);
+            if (outputType === 'idle_combo' || outputType === 'normal')
+                lines.push(`  - Idle+Combo: ${idleComboLevel} - (${run.idleComboRunDuration}h)`);
+            response += lines.join('\n') + '\n\n';
         });
         await interaction.reply({ content: response });
     }
     
-    formatNumber(num: any): string {
-        if (num >= 1e9) {
-            return (num / 1e9).toFixed(3) + 'B';
-        } else if (num >= 1e6) {
-            return (num / 1e6).toFixed(3) + 'M';
-        } else if (num >= 1e3) {
-            return (num / 1e3).toFixed(2) + 'K';
-        } else {
-            return num
-        }
+    formatNumber(num: number): string {
+        if (num >= 1e9) return (num / 1e9).toFixed(3) + 'B';
+        if (num >= 1e6) return (num / 1e6).toFixed(3) + 'M';
+        if (num >= 1e3) return (num / 1e3).toFixed(2) + 'K';
+        return String(num);
     }
 }
 
